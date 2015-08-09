@@ -4,33 +4,53 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 //libreria partials para hacer paginas repetitivas
 var partials = require('express-partials');
+var methodOverride = require('method-override');
+//para las sesiones
+var session = require('express-session');
 
 var routes = require('./routes/index');
 //var users = require('./routes/users');
+var sessionController = require('./controllers/session_controller.js');
 
 var app = express();
-
-var methodOverride = require('method-override');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+app.use(partials());
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded());
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.urlencoded({extended:true}));
+
+//para el inicio de sesion
+app.use(cookieParser('Quiz 2015'));
+app.use(session({
+    secret:'Quiz 2015',
+    resave:false,
+    saveUninitialized:true}));
+
 app.use(methodOverride('_method'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 
-app.use(partials());
+app.use(function(req,res,next){
+    //guardamos path en session.redir para despues de login
+    if(!req.path.match(/\/login|\/logout/)){
+        req.session.redir = req.path;
+    }
+
+    //Hacer visible req.session en las vistas
+    res.locals.session = req.session;
+    next();
+});
+
 app.use('/', routes);
 //app.use('/users', users);
 
@@ -40,6 +60,7 @@ app.use(function(req, res, next) {
     err.status = 404;
     next(err);
 });
+
 
 // error handlers
 
