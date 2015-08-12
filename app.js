@@ -39,6 +39,25 @@ app.use(session({
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+//Controlar tiempo de sesion
+app.use(function(req, res, next) {
+//hay dos casos, que hayamos iniciado sesion o que no
+if(req.session.user){
+    if(!req.session.tiempo_inicio){//la primera vez debemos establecer el tiempo al momento actual, con la funcion getTime de javascript
+    req.session.tiempo_inicio=(new Date()).getTime();
+    }
+    else{
+        if((new Date()).getTime()-req.session.tiempo_inicio > 120000){//si los milisegundos son mayores a 120.000, finalizamos la sesion
+            delete req.session.user;     //eliminamos el usuario
+            req.session.tiempo_inicio=null;
+        }
+        else{//si no, actualizamos la variable
+            req.session.tiempo_inicio=(new Date()).getTime();
+        }
+    }
+}
+next();
+});
 
 app.use(function(req,res,next){
     //guardamos path en session.redir para despues de login
